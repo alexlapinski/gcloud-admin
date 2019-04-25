@@ -54,4 +54,36 @@ gcloud services enable cloudresourcemanager.googleapis.com
 gcloud services enable cloudbilling.googleapis.com
 gcloud services enable iam.googleapis.com
 gcloud services enable compute.googleapis.com
+
+# TODO: Figure out if these organization level changes are needed
+# My GCP account doesn't have an org
+# gcloud organizations add-iam-policy-binding \
+#  --member serviceAccount:terraform@${TF_ADMIN}.iam.gserviceaccount.com \
+#  --role roles/resourcemanager.projectCreator
+
+#gcloud organizations add-iam-policy-binding \
+#  --member serviceAccount:terraform@${TF_ADMIN}.iam.gserviceaccount.com \
+#  --role roles/billing.user
 echo "\n\xE2\x9C\x94 Done\n"
+
+echo "# Setting up Remote Storage for Terraform State"
+gsutil mb -p ${TF_ADMIN} gs://${TF_ADMIN}
+
+cat > backend.tf << EOF
+terraform {
+ backend "gcs" {
+   bucket  = "${TF_ADMIN}"
+   prefix  = "terraform/state"
+   project = "${TF_ADMIN}"
+ }
+}
+EOF
+
+gsutil versioning set on gs://${TF_ADMIN}
+echo "\n\xE2\x9C\x94 Done\n"
+
+echo "# Setting up Environment variables for Terraform Provider"
+export GOOGLE_APPLICATION_CREDENTIALS=${TF_CREDS}
+export GOOGLE_PROJECT=${TF_ADMIN}
+echo "\n\xE2\x9C\x94 Done\n"
+
